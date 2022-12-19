@@ -27,13 +27,11 @@ def load_image(name, colorkey=None):
 
 
 def start_screen():
-    intro_text = ["ЗАСТАВКА", "",
-                  "Правила игры",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))  # добавить заставку
+    intro_text = ["Здесь", "",
+                  "Будет заставка"]
+    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))  # добавить заставку
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.Font(None, 50)
     text_coord = 50
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('white'))
