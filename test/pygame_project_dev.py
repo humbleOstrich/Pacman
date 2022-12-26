@@ -141,40 +141,41 @@ while True:
         if event.type == pygame.QUIT:
             terminate()
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                char = pygame.Rect(player.rect.x + speed, player.rect.y, 40, 40)
-                for m in platforms:
-                    if char.colliderect(m):
-                        move_right = False
-                        break
-                if move_right:
-                    player.move("right")
-            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                char = pygame.Rect(player.rect.x - speed, player.rect.y, 40, 40)
-                for m in platforms:
-                    if char.colliderect(m):
-                        move_left = False
-                        break
-                if move_left:
-                    player.move("left")
-            if event.key == pygame.K_UP or event.key == pygame.K_w:
-                char = pygame.Rect(player.rect.x, player.rect.y - speed, 40, 40)
-                for m in platforms:
-                    if char.colliderect(m):
-                        move_up = False
-                        break
-                if move_up:
-                    player.move("up")
+        keys = pygame.key.get_pressed()
 
-            if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                char = pygame.Rect(player.rect.x, player.rect.y + speed, 40, 40)
-                for m in platforms:
-                    if char.colliderect(m):
-                        move_down = False
-                        break
-                if move_down:
-                    player.move("down")
+        if keys[pygame.K_d]:
+            char = pygame.Rect(player.rect.x + speed, player.rect.y, 40, 40)
+            for m in platforms:
+                if char.colliderect(m):
+                    move_right = False
+                    break
+            if move_right:
+                player.move("right")
+        if keys[pygame.K_a]:
+            char = pygame.Rect(player.rect.x - speed, player.rect.y, 40, 40)
+            for m in platforms:
+                if char.colliderect(m):
+                    move_left = False
+                    break
+            if move_left:
+                player.move("left")
+        if keys[pygame.K_w]:
+            char = pygame.Rect(player.rect.x, player.rect.y - speed, 40, 40)
+            for m in platforms:
+                if char.colliderect(m):
+                    move_up = False
+                    break
+            if move_up:
+                player.move("up")
+
+        if keys[pygame.K_s]:
+            char = pygame.Rect(player.rect.x, player.rect.y + speed, 40, 40)
+            for m in platforms:
+                if char.colliderect(m):
+                    move_down = False
+                    break
+            if move_down:
+                player.move("down")
     all_sprites.update()
     tiles_group.draw(screen)
     player_group.draw(screen)
