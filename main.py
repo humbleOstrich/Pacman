@@ -48,7 +48,7 @@ def exit():
 
 
 def draw_grid():
-    for line in range(0, 20):
+    for line in range(0, 50):
         pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (SCREEN_WIDTH, line * tile_size))
         pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, SCREEN_HEIGHT))
 
@@ -127,66 +127,57 @@ def load_level(filename):
 
     # дополняем каждую строку пустыми клетками ('.')
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+    # world = World(world_data)
 
 
-# def generate_level(level):
-#     global map_width, map_height
-#     new_player, x, y = None, None, None
-#     for y in range(len(level)):
-#         for x in range(len(level[y])):
-#             if level[y][x] == '.':
-#                 Tile('empty', x, y)
-#             elif level[y][x] == '#' or level[y][x] == '/':
-#                 Tile('wall', x, y)
-#             elif level[y][x] == '@':
-#                 Tile('empty', x, y)
-#                 new_player = Player(x, y)
-#     map_width = 50 * len(level[0])
-#     map_height = 50 * len(level)
-#     # вернем игрока, а также размер поля в клетках
-#     return new_player, x, y
+class World():
+    def __init__(self, data):
+        self.tile_list = []
+
+        # load images
+        dirt_img = pygame.image.load('data/img/walls/walls/image_part_001.png')
+        grass_img = pygame.image.load('data/img/walls/walls/block.png')
+
+        row_count = 0
+        for row in data:
+            col_count = 0
+            for stri in row:
+                print(stri, 'str')
+                if stri == '@':
+                    img = pygame.transform.scale(grass_img, (tile_size, tile_size))
+                    img_rect = img.get_rect()
+                    img_rect.x = col_count * tile_size
+                    img_rect.y = row_count * tile_size
+                    tile = (img, img_rect)
+                    self.tile_list.append(tile)
+                if stri == '.':
+                    img = pygame.transform.scale(dirt_img, (tile_size, tile_size))
+                    img_rect = img.get_rect()
+                    img_rect.x = col_count * tile_size
+                    img_rect.y = row_count * tile_size
+                    tile = (img, img_rect)
+                    self.tile_list.append(tile)
+                col_count += 1
+            row_count += 1
+
+        # print(self.tile_list)
 
 
-# all_sprites.add(hero)
-# player_group.add(hero)
-
-# class Player(pygame.sprite.Sprite):
-#     def __init__(self, pos_x, pos_y):
-#         super().__init__(player_group, all_sprites)
-#         self.image = player_img
-#         self.rect = self.image.get_rect().move(
-#             tile_size * pos_x + 15, tile_size * pos_y + 5)
-#         self.mask = pygame.mask.from_surface(self.image)
-#         self.move(pos_x, pos_y)
-#
-#     def move(self, pos_x, pos_y):
-#         dx = 0
-#         dy = 0
-#         key = pygame.key.get_pressed()
-#         if key[pygame.K_RIGHT]:
-#             dx += speed
-#         if key[pygame.K_LEFT]:
-#             pass
-#         if key[pygame.K_UP]:
-#             pass
-#         if key[pygame.K_DOWN]:
-#             pass
-#         screen.blit(self.image, self.rect)
-#         pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
-#         self.rect.x += dx
-#         self.rect.y += dy
-#         screen.blit(self.image, self.rect)
-#         pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+    def draw(self):
+        for tile in self.tile_list:
+            screen.blit(tile[0], tile[1])
 
 
 start_screen()
 run = True
-hero = None
+# hero = None
 
-text_map = load_level('lvl1.txt')
+world = World(load_level('lvl1.txt'))
+print(load_level('lvl1.txt'))
 # player, level_x, level_y = generate_level(load_level('lvl1.txt'))
 while run:
     screen.fill(background)
+
     # generate_level('data/')
     draw_grid()
     # hero = Player(0, 0)
@@ -194,7 +185,7 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-
+    world.draw()
     all_sprites.draw(screen)
     tiles_group.draw(screen)
     player_group.draw(screen)
