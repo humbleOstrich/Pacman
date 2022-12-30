@@ -90,12 +90,18 @@ def end_screen():
             # all_sprites.kill()
             for player in player_group:
                 player.kill()
+                player_group.remove(player)
                 del player
             for point in point_group:
                 point.kill()
+                point.remove()
                 del point
+                points.clear()
             for enemy in enemy_group:
+                enemy.remove()
                 enemy.kill()
+                enemy_group.remove(enemy)
+                enemies.clear()
                 del enemy
 
             player, level_x, level_y = generate_level(load_level(map_name))
@@ -254,12 +260,12 @@ map_name = f"levels/level_{level}.txt"
 player, level_x, level_y = generate_level(load_level(map_name))
 text_map = load_level(map_name)
 counter = 0
-total_points = 1000
+total_points = 10000
 routes = ['right', 'left', 'down', 'up']
 coords = [(1000, 250), (1025, 250), (975, 250)]
 
 while True:
-    # print(gameover)
+    print(gameover)
     move_up = True
     move_down = True
     move_left = True
@@ -267,6 +273,7 @@ while True:
 
     if gameover is False:
         once = 0
+        char = pygame.Rect(player.rect.x, player.rect.y, 60, 60)
         for event in pygame.event.get():
             keys = pygame.key.get_pressed()
             if event.type == pygame.QUIT:
@@ -278,9 +285,9 @@ while True:
                     if char.colliderect(m):
                         move_right = False
                         break
-                for enemy in enemies:
-                    if char.colliderect(enemy):
-                        gameover = True
+                # for enemy in enemies:
+                # if char.colliderect(enemy):
+                #     gameover = True
                 if move_right:
                     player.move("right")
             if keys[pygame.K_a]:
@@ -289,9 +296,9 @@ while True:
                     if char.colliderect(m):
                         move_left = False
                         break
-                for enemy in enemies:
-                    if char.colliderect(enemy):
-                        gameover = True
+                # for enemy in enemies:
+                #     if char.colliderect(enemy):
+                #         gameover = True
                 if move_left:
                     player.move("left")
             if keys[pygame.K_w]:
@@ -300,9 +307,9 @@ while True:
                     if char.colliderect(m):
                         move_up = False
                         break
-                for enemy in enemies:
-                    if char.colliderect(enemy):
-                        gameover = True
+                # for enemy in enemies:
+                #     if char.colliderect(enemy):
+                #         gameover = True
                 if move_up:
                     player.move("up")
             if keys[pygame.K_s]:
@@ -311,9 +318,9 @@ while True:
                     if char.colliderect(m):
                         move_down = False
                         break
-                for enemy in enemies:
-                    if char.colliderect(enemy):
-                        gameover = True
+                # for enemy in enemies:
+                #     if char.colliderect(enemy):
+                #         gameover = True
                 if move_down:
                     player.move("down")
         if pygame.sprite.spritecollide(player, point_group, True):
@@ -324,6 +331,10 @@ while True:
             # level += 1
 
         for enemy in enemies:
+            print(enemy)
+            if char.colliderect(enemy):
+                gameover = True
+                print('enemy')
             if int(enemy.rect.x) + 35 in range(1015, 1035) and int(enemy.rect.y) + 35 in range(250, 270):
                 possible_route = routes[random.randint(0, 3)]
                 print(enemy.route)
