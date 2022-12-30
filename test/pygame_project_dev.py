@@ -2,8 +2,9 @@ import os
 import sys
 import pygame
 import random
+import ctypes
+ctypes.windll.user32.SetProcessDPIAware()
 pygame.font.init()
-
 
 size = width, height = 1400, 700
 WIDTH, HEIGHT = width, height
@@ -64,6 +65,21 @@ def generate_level(level):
                 new_player = Player(x, y)
             elif level[y][x] == 'p':
                 points.append(Point((x, y)))
+            elif level[y][x] == 'c':
+                points.append(Point((x, y)))
+                c_points.append(CPoint((x, y), 0))
+            elif level[y][x] == 'd':
+                points.append(Point((x, y)))
+                c_points.append(CPoint((x, y), 2))
+            elif level[y][x] == 'r':
+                points.append(Point((x, y)))
+                c_points.append(CPoint((x, y), 1))
+            elif level[y][x] == 'l':
+                points.append(Point((x, y)))
+                c_points.append(CPoint((x, y), -1))
+            elif level[y][x] == 'u':
+                points.append(Point((x, y)))
+                c_points.append(CPoint((x, y), -2))
             elif level[y][x] == 'e':
                 enemies.append(Enemy(x, y, enemy_e_image))
             elif level[y][x] == 'n':
@@ -91,7 +107,7 @@ def load_level(filename):
 
 
 player_image = load_image('pacman.png')  # добавить анимацию игрока
-enemy_e_image = load_image('ghost.png')
+enemy_e_image = load_image('ghost_1.png')
 enemy_n_image = load_image('ghost_2.png')
 enemy_m_image = load_image('ghost_3.png')
 enemy_y_image = load_image('ghost_4.png')
@@ -118,7 +134,20 @@ class Point(pygame.sprite.Sprite):
         self.rect.y = coords[1] * 25
 
     def update(self):
-        pygame.draw.circle(screen, pygame.Color("black"), (self.rect.x + 18, self.rect.y + 18), 8)
+        pygame.draw.circle(screen, pygame.Color("black"), (self.rect.x + 8, self.rect.y + 8), 8)
+
+
+class CPoint(pygame.sprite.Sprite):
+
+    def __init__(self, coords, forbidden_d):
+        super().__init__(all_sprites, c_point_group)
+        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 5, 5)
+        self.rect.x = coords[0] * 25
+        self.rect.y = coords[1] * 25
+        self.f_direction = forbidden_d
+
+    def update(self):
+        pygame.draw.rect(screen, pygame.Color("red"), (self.rect.x, self.rect.y, 5, 5))
 
 
 class Player(pygame.sprite.Sprite):
@@ -128,16 +157,16 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(
             25 * pos_x, 25 * pos_y)
 
-    def move(self, direction):
+    def move(self, direction, distance):
 
         if direction == "right":
-            self.rect = self.rect.move(10, 0)
+            self.rect = self.rect.move(distance, 0)
         elif direction == "left":
-            self.rect = self.rect.move(-10, 0)
+            self.rect = self.rect.move(distance, 0)
         elif direction == "down":
-            self.rect = self.rect.move(0, 10)
+            self.rect = self.rect.move(0, distance)
         elif direction == "up":
-            self.rect = self.rect.move(0, -10)
+            self.rect = self.rect.move(0, distance)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -146,17 +175,17 @@ class Enemy(pygame.sprite.Sprite):
         self.image = name
         self.rect = self.image.get_rect().move(
             25 * pos_x, 25 * pos_y)
-        self.route = 'right'
+        self.route = 1
 
-    def move(self, direction):
-        if direction == "right":
-            self.rect = self.rect.move(10, 0)
-        elif direction == "left":
-            self.rect = self.rect.move(-10, 0)
-        elif direction == "down":
-            self.rect = self.rect.move(0, 10)
-        elif direction == "up":
-            self.rect = self.rect.move(0, -10)
+    def move(self, direction, distance):
+        if direction == 1:
+            self.rect = self.rect.move(distance, 0)
+        elif direction == -1:
+            self.rect = self.rect.move(distance, 0)
+        elif direction == 2:
+            self.rect = self.rect.move(0, distance)
+        elif direction == -2:
+            self.rect = self.rect.move(0, distance)
 
 
 pygame.display.set_caption('pacman')
@@ -166,12 +195,15 @@ all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 point_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
+c_point_group = pygame.sprite.Group()
 platforms = []
 points = []
+c_points = []
 enemies = []
+
 FPS = 50
 player_speed = 10
-enemy_speed = 10
+enemy_speed = 5
 clock = pygame.time.Clock()
 start_screen()
 map_name = "level_8.txt"
@@ -179,8 +211,7 @@ player, level_x, level_y = generate_level(load_level(map_name))
 text_map = load_level(map_name)
 counter = 0
 total_points = 296
-routes = ['right', 'left', 'down', 'up']
-coords = [(1000, 250), (1025, 250), (975, 250)]
+routes = [1, -1, 2, -2]
 
 while True:
     move_up = True
@@ -201,7 +232,7 @@ while True:
                     move_right = False
                     break
             if move_right:
-                player.move("right")
+                player.move("right", player_speed)
         if keys[pygame.K_a]:
             char = pygame.Rect(player.rect.x - player_speed, player.rect.y, 60, 60)
             for m in platforms:
@@ -209,7 +240,7 @@ while True:
                     move_left = False
                     break
             if move_left:
-                player.move("left")
+                player.move("left", -player_speed)
         if keys[pygame.K_w]:
             char = pygame.Rect(player.rect.x, player.rect.y - player_speed, 60, 60)
             for m in platforms:
@@ -217,7 +248,7 @@ while True:
                     move_up = False
                     break
             if move_up:
-                player.move("up")
+                player.move("up", -player_speed)
         if keys[pygame.K_s]:
             char = pygame.Rect(player.rect.x, player.rect.y + player_speed, 60, 60)
             for m in platforms:
@@ -225,7 +256,7 @@ while True:
                     move_down = False
                     break
             if move_down:
-                player.move("down")
+                player.move("down", player_speed)
     if pygame.sprite.spritecollide(player, point_group, True):
         counter += 1
     if counter == total_points:
@@ -233,49 +264,70 @@ while True:
 
     for enemy in enemies:
 
-        if int(enemy.rect.x) + 35 in range(1015, 1035) and int(enemy.rect.y) + 35 in range(250, 270):
-            possible_route = routes[random.randint(0, 3)]
-            print(enemy.route)
-            while possible_route == enemy.route:
-                possible_route = routes[random.randint(0, 3)]
-            enemy.route = possible_route
-            print(enemy.route)
-
-        if enemy.route == 'right':
+        if enemy.route == 1:
             mob = pygame.Rect(enemy.rect.x + enemy_speed, enemy.rect.y, 70, 70)
             for m in platforms:
                 if mob.colliderect(m):
-                    enemy.route = routes[random.randint(0, 3)]
+                    possible_r = routes[random.randint(0, 3)]
+                    while possible_r == -1 or possible_r == 1:
+                        possible_r = routes[random.randint(0, 3)]
+                    enemy.route = possible_r
                     break
             else:
-                enemy.move('right')
-        if enemy.route == 'left':
+                enemy.move(1, enemy_speed)
+        if enemy.route == -1:
             mob = pygame.Rect(enemy.rect.x - enemy_speed, enemy.rect.y, 70, 70)
             for m in platforms:
                 if mob.colliderect(m):
-                    enemy.route = routes[random.randint(0, 3)]
+                    possible_r = routes[random.randint(0, 3)]
+                    while possible_r == 1 or possible_r == -1:
+                        possible_r = routes[random.randint(0, 3)]
+                    enemy.route = possible_r
                     break
             else:
-                enemy.move('left')
-        if enemy.route == 'down':
+                enemy.move(-1, -enemy_speed)
+        if enemy.route == 2:
             mob = pygame.Rect(enemy.rect.x, enemy.rect.y + enemy_speed, 70, 70)
             for m in platforms:
                 if mob.colliderect(m):
-                    enemy.route = routes[random.randint(0, 3)]
+                    possible_r = routes[random.randint(0, 3)]
+                    while possible_r == -2 or possible_r == 2:
+                        possible_r = routes[random.randint(0, 3)]
+                    enemy.route = possible_r
                     break
             else:
-                enemy.move('down')
-        if enemy.route == 'up':
+                enemy.move(2, enemy_speed)
+        if enemy.route == -2:
             mob = pygame.Rect(enemy.rect.x, enemy.rect.y - enemy_speed, 70, 70)
             for m in platforms:
                 if mob.colliderect(m):
-                    enemy.route = routes[random.randint(0, 3)]
+                    possible_r = routes[random.randint(0, 3)]
+                    while possible_r == 2 or possible_r == -2:
+                        possible_r = routes[random.randint(0, 3)]
+                    enemy.route = possible_r
                     break
             else:
-                enemy.move('up')
+                enemy.move(-2, -enemy_speed)
+        # if pygame.sprite.spritecollide(enemy, c_point_group, False):
+        #     for m in c_points:
+        #         if enemy.rect.colliderect(m):
+        #             possible_r = routes[random.randint(0, 3)]
+        #             while possible_r == m.f_direction:
+        #                 possible_r = routes[random.randint(0, 3)]
+        #             enemy.route = possible_r
+        #             enemy.move(enemy.route, 5)
+        for point in c_points:
+            if point.rect.x == enemy.rect.x + 35:
+                if point.rect.y == enemy.rect.y + 35:
+                    pr = routes[random.randint(0, 3)]
+                    while pr == point.f_direction:
+                        pr = routes[random.randint(0, 3)]
+                    enemy.route = pr
+                    enemy.move(enemy.route, 10)
+                    break
 
     all_sprites.update()
-    pygame.draw.rect(screen, (255, 0, 0), (1015, 250, 10, 10))
+
     player_group.draw(screen)
     enemy_group.draw(screen)
     pygame.display.flip()
