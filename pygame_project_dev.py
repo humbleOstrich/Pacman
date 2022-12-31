@@ -1,15 +1,28 @@
 import os
+import sqlite3
 import sys
 import pygame
 import random
-import ctypes
-ctypes.windll.user32.SetProcessDPIAware()
+import button
+
 pygame.font.init()
 
 size = width, height = 1400, 700
 WIDTH, HEIGHT = width, height
 screen = pygame.display.set_mode(size)
 map_width, map_height = 0, 0
+
+start_img = pygame.image.load('data/img/btns/Play Button.png').convert_alpha()
+exit_img = pygame.image.load('data/img/btns/Quit Button.png').convert_alpha()
+info_img = pygame.image.load('data/img/btns/Info Square Button.png').convert_alpha()
+resume_img = pygame.image.load('data/img/btns/Resume Button.png').convert_alpha()
+menu_img = pygame.image.load('data/img/btns/Menu Button.png').convert_alpha()
+home_img = pygame.image.load('data/img/btns/Home Square Button.png').convert_alpha()
+death_background = (255, 69, 0)
+
+coords_for_first_btn = ((width // 2) - 150, 80)
+coords_for_second_btn = ((width // 2) - 150, 200)
+coords_for_third_btn = ((width // 2) - 150, 320)
 
 
 def load_image(name, colorkey=None):
@@ -29,29 +42,32 @@ def load_image(name, colorkey=None):
 
 
 def start_screen():
-    intro_text = ["Здесь", "",
-                  "Будет заставка"]
-    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))  # добавить заставку
+    fon = pygame.transform.scale(pygame.image.load('data/img/floor.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 50)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
     while True:
+        # create btns
+        start_button = button.Button(coords_for_first_btn[0], coords_for_first_btn[1], start_img, 0.35)
+        resume_button = button.Button(coords_for_second_btn[0], coords_for_second_btn[1], resume_img, 0.35)
+        info_button = button.Button(width // 2 + 200, 40, info_img, 0.3)
+        exit_button = button.Button(coords_for_third_btn[0], coords_for_third_btn[1], exit_img, 0.35)
+        if start_button.draw(screen):
+            global gameover
+            gameover = False
+            global counter
+            counter = 0
+
+            return
+        if exit_button.draw(screen):
+            terminate()
+        if info_button.draw(screen):
+            print('здесь будет окно с правилами')
+        if resume_button.draw(screen):
+            print('здесь будет окно с результатами')
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                return
         pygame.display.flip()
-        clock.tick(FPS)
+        pygame.time.delay(FPS)
 
 
 def generate_level(level):
@@ -106,11 +122,96 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
+def add_to_database(level, score):
+    con = sqlite3.connect("results_db.sqlite")
+    cur = con.cursor()
+    cur.execute(f'INSERT INTO results(level,score) VALUES({level}, {score})').fetchall()
+    con.commit()
+    con.close()
+
+
+def end_screen():
+    while True:
+        screen.fill(death_background)
+        start_button = button.Button(coords_for_first_btn[0], coords_for_first_btn[1], start_img, 0.35)
+        resume_button = button.Button(coords_for_second_btn[0], coords_for_second_btn[1], resume_img, 0.35)
+        info_button = button.Button(width // 2 + 200, 40, info_img, 0.3)
+        home_button = button.Button(width // 2 + 200, 120, home_img, 0.3)
+        exit_button = button.Button(coords_for_third_btn[0], coords_for_third_btn[1], exit_img, 0.35)
+        if start_button.draw(screen):
+            # gameover = False
+            global gameover
+            gameover = False
+            global counter
+            map_name = f"levels/level_{level}.txt"
+            global player
+            global level_x
+            global level_y
+            # all_sprites.kill()
+            for player in player_group:
+                player.kill()
+                player_group.remove(player)
+                del player
+            for point in point_group:
+                point.kill()
+                point.remove()
+                del point
+                points.clear()
+            for enemy in enemy_group:
+                enemy.remove()
+                enemy.kill()
+                enemy_group.remove(enemy)
+                enemies.clear()
+                del enemy
+
+            player, level_x, level_y = generate_level(load_level(map_name))
+            counter = 0
+            screen.fill((255, 228, 181))
+
+            return
+        if exit_button.draw(screen):
+            terminate()
+        if info_button.draw(screen):
+            print('здесь будет окно с правилами')
+        if resume_button.draw(screen):
+            print('здесь будет окно с результатами')
+        if home_button.draw(screen):
+            start_screen()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        pygame.display.flip()
+        pygame.time.delay(FPS)
+
+
+def animation(x, y):
+    global animation_counter
+    if animation_counter == 19:
+        animation_counter = 0
+    screen.blit(player_img[animation_counter // 10], (x, y))
+    animation_counter += 1
+
+
+pacman_copy = load_image("pacman0_copy.png")
+
+
+def flip_animation(direction):
+    if direction == 'right':
+        player_img[0] = pacman_copy
+    if direction == 'left':
+        player_img[0] = pygame.transform.flip(pacman_copy, True, False)
+    if direction == 'down':
+        player_img[0] = pygame.transform.rotate(pacman_copy, -90)
+    if direction == 'up':
+        player_img[0] = pygame.transform.rotate(pacman_copy, 90)
+
+
 player_image = load_image('pacman.png')  # добавить анимацию игрока
 enemy_e_image = load_image('ghost_1.png')
 enemy_n_image = load_image('ghost_2.png')
 enemy_m_image = load_image('ghost_3.png')
 enemy_y_image = load_image('ghost_4.png')
+player_img = [load_image('pacman0.png'), load_image('pacman1.png')]
 
 
 class Platform(pygame.sprite.Sprite):
@@ -152,10 +253,11 @@ class CPoint(pygame.sprite.Sprite):
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(player_group, all_sprites)
-        self.image = player_image
-        self.rect = self.image.get_rect().move(
-            25 * pos_x, 25 * pos_y)
+        super().__init__(player_group)
+        # self.image = player_image
+        # self.rect = self.image.get_rect().move(
+        #     25 * pos_x, 25 * pos_y)
+        self.rect = pygame.Rect(25 * pos_x, 25 * pos_y, 60, 60)
 
     def move(self, direction, distance):
 
@@ -167,6 +269,10 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.rect.move(0, distance)
         elif direction == "up":
             self.rect = self.rect.move(0, distance)
+
+    def update(self):
+        screen.blit(player_img[animation_counter // 10], (self.rect.x, self.rect.y))
+        # animation(self.rect.x, self.rect.y)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -200,70 +306,84 @@ platforms = []
 points = []
 c_points = []
 enemies = []
-
+animation_counter = 0
 FPS = 50
 player_speed = 10
 enemy_speed = 5
 clock = pygame.time.Clock()
 start_screen()
-map_name = "level_8.txt"
+level = 8
+once = 0
+map_name = f"levels/level_{level}.txt"
 player, level_x, level_y = generate_level(load_level(map_name))
 text_map = load_level(map_name)
 counter = 0
-total_points = 296
+total_points = 10000
 routes = [1, -1, 2, -2]
+gameover = False
+keys_pressed = 20
 
 while True:
     move_up = True
     move_down = True
     move_left = True
     move_right = True
+    keys_pressed += 1
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             terminate()
 
-        keys = pygame.key.get_pressed()
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_d]:
+        keys_pressed = 0
+        flip_animation("right")
+        char = pygame.Rect(player.rect.x + player_speed, player.rect.y, 60, 60)
+        for m in platforms:
+            if char.colliderect(m):
+                move_right = False
+                break
+        if move_right:
+            player.move("right", player_speed)
+    if keys[pygame.K_a]:
+        keys_pressed = 0
+        flip_animation("left")
+        char = pygame.Rect(player.rect.x - player_speed, player.rect.y, 60, 60)
+        for m in platforms:
+            if char.colliderect(m):
+                move_left = False
+                break
+        if move_left:
+            player.move("left", -player_speed)
+    if keys[pygame.K_w]:
+        keys_pressed = 0
+        flip_animation("up")
+        char = pygame.Rect(player.rect.x, player.rect.y - player_speed, 60, 60)
+        for m in platforms:
+            if char.colliderect(m):
+                move_up = False
+                break
+        if move_up:
+            player.move("up", -player_speed)
+    if keys[pygame.K_s]:
+        keys_pressed = 0
+        flip_animation("down")
+        char = pygame.Rect(player.rect.x, player.rect.y + player_speed, 60, 60)
+        for m in platforms:
+            if char.colliderect(m):
+                move_down = False
+                break
+        if move_down:
+            player.move("down", player_speed)
 
-        if keys[pygame.K_d]:
-            char = pygame.Rect(player.rect.x + player_speed, player.rect.y, 60, 60)
-            for m in platforms:
-                if char.colliderect(m):
-                    move_right = False
-                    break
-            if move_right:
-                player.move("right", player_speed)
-        if keys[pygame.K_a]:
-            char = pygame.Rect(player.rect.x - player_speed, player.rect.y, 60, 60)
-            for m in platforms:
-                if char.colliderect(m):
-                    move_left = False
-                    break
-            if move_left:
-                player.move("left", -player_speed)
-        if keys[pygame.K_w]:
-            char = pygame.Rect(player.rect.x, player.rect.y - player_speed, 60, 60)
-            for m in platforms:
-                if char.colliderect(m):
-                    move_up = False
-                    break
-            if move_up:
-                player.move("up", -player_speed)
-        if keys[pygame.K_s]:
-            char = pygame.Rect(player.rect.x, player.rect.y + player_speed, 60, 60)
-            for m in platforms:
-                if char.colliderect(m):
-                    move_down = False
-                    break
-            if move_down:
-                player.move("down", player_speed)
     if pygame.sprite.spritecollide(player, point_group, True):
         counter += 1
     if counter == total_points:
-        pass
+        gameover = True
 
     for enemy in enemies:
-
+        if player.rect.colliderect(enemy):
+            gameover = True
         if enemy.route == 1:
             mob = pygame.Rect(enemy.rect.x + enemy_speed, enemy.rect.y, 70, 70)
             for m in platforms:
@@ -325,11 +445,20 @@ while True:
                     enemy.route = pr
                     enemy.move(enemy.route, 10)
                     break
-
+    if gameover:
+        if once == 0:
+            add_to_database(level, counter)
+            once += 1
+        end_screen()
+        terminate()
+    screen.fill((255, 228, 181))
     all_sprites.update()
+    if keys_pressed < 20:
+        animation(player.rect.x, player.rect.y)
 
-    player_group.draw(screen)
+    if keys_pressed >= 20:
+        player_group.update()
+
     enemy_group.draw(screen)
     pygame.display.flip()
-    screen.fill((255, 228, 181))
     clock.tick(FPS)
