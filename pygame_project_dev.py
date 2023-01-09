@@ -1,28 +1,16 @@
 import os
 import sqlite3
 import sys
+import time
 import pygame
 import random
-import button
-
+pygame.init()
 pygame.font.init()
 
 size = width, height = 1400, 700
 WIDTH, HEIGHT = width, height
 screen = pygame.display.set_mode(size)
 map_width, map_height = 0, 0
-
-start_img = pygame.image.load('data/img/btns/Play Button.png').convert_alpha()
-exit_img = pygame.image.load('data/img/btns/Quit Button.png').convert_alpha()
-info_img = pygame.image.load('data/img/btns/Info Square Button.png').convert_alpha()
-resume_img = pygame.image.load('data/img/btns/Resume Button.png').convert_alpha()
-menu_img = pygame.image.load('data/img/btns/Menu Button.png').convert_alpha()
-home_img = pygame.image.load('data/img/btns/Home Square Button.png').convert_alpha()
-death_background = (255, 69, 0)
-
-coords_for_first_btn = ((width // 2) - 150, 80)
-coords_for_second_btn = ((width // 2) - 150, 200)
-coords_for_third_btn = ((width // 2) - 150, 320)
 
 
 def load_image(name, colorkey=None):
@@ -41,38 +29,15 @@ def load_image(name, colorkey=None):
     return image
 
 
-def start_screen():
-    fon = pygame.transform.scale(pygame.image.load('data/img/floor.png'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    while True:
-        # create btns
-        start_button = button.Button(coords_for_first_btn[0], coords_for_first_btn[1], start_img, 0.35)
-        resume_button = button.Button(coords_for_second_btn[0], coords_for_second_btn[1], resume_img, 0.35)
-        info_button = button.Button(width // 2 + 200, 40, info_img, 0.3)
-        exit_button = button.Button(coords_for_third_btn[0], coords_for_third_btn[1], exit_img, 0.35)
-        if start_button.draw(screen):
-            global gameover
-            gameover = False
-            global counter
-            counter = 0
-
-            return
-        if exit_button.draw(screen):
-            terminate()
-        if info_button.draw(screen):
-            print('здесь будет окно с правилами')
-        if resume_button.draw(screen):
-            print('здесь будет окно с результатами')
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-        pygame.display.flip()
-        pygame.time.delay(FPS)
-
-
-def generate_level(level):
+def generate_level(level, level_n):
     global map_width, map_height
+    # point_total_num = 0
     new_player, x, y = None, None, None
+    total_p = 0
+    if level_n == 1:
+        total_p = 294
+    elif level_n == 2:
+        total_p = 291
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == 'x':
@@ -80,33 +45,40 @@ def generate_level(level):
             elif level[y][x] == '@':
                 new_player = Player(x, y)
             elif level[y][x] == 'p':
-                points.append(Point((x, y)))
+                Point((x, y))
             elif level[y][x] == 'c':
-                points.append(Point((x, y)))
+                Point((x, y))
                 c_points.append(CPoint((x, y), 0))
             elif level[y][x] == 'd':
-                points.append(Point((x, y)))
+                Point((x, y))
                 c_points.append(CPoint((x, y), 2))
             elif level[y][x] == 'r':
-                points.append(Point((x, y)))
+                Point((x, y))
                 c_points.append(CPoint((x, y), 1))
             elif level[y][x] == 'l':
-                points.append(Point((x, y)))
+                Point((x, y))
                 c_points.append(CPoint((x, y), -1))
             elif level[y][x] == 'u':
-                points.append(Point((x, y)))
+                Point((x, y))
                 c_points.append(CPoint((x, y), -2))
             elif level[y][x] == 'e':
-                enemies.append(Enemy(x, y, enemy_e_image))
+                enemies.append(Enemy(x, y, red_ghost_img))
             elif level[y][x] == 'n':
-                enemies.append(Enemy(x, y, enemy_n_image))
+                enemies.append(Enemy(x, y, pink_ghost_img))
             elif level[y][x] == 'm':
-                enemies.append(Enemy(x, y, enemy_m_image))
+                enemies.append(Enemy(x, y, blue_ghost_img))
             elif level[y][x] == 'y':
-                enemies.append(Enemy(x, y, enemy_y_image))
+                enemies.append(Enemy(x, y, yellow_ghost_img))
+            elif level[y][x] == 'b':
+                BigPoint((x, y))
+            # if level[y][x] == 'u' or level[y][x] == 'l' or level[y][x] == 'r' or level[y][x] == 'd'\
+            #     or level[y][x] == 'p' or level[y][x] == 'c':
+            #     point_total_num += 1
+
     map_width = 50 * len(level[0])
     map_height = 50 * len(level)
-    return new_player, x, y
+    # print(point_total_num)
+    return new_player, x, y, total_p
 
 
 def terminate():
@@ -125,63 +97,48 @@ def load_level(filename):
 def add_to_database(level, score):
     con = sqlite3.connect("results_db.sqlite")
     cur = con.cursor()
-    cur.execute(f'INSERT INTO results(level,score) VALUES({level}, {score})').fetchall()
+    cur.execute(f'INSERT INTO results(level,score) VALUES({level}, {score})')
     con.commit()
     con.close()
 
 
-def end_screen():
-    while True:
-        screen.fill(death_background)
-        start_button = button.Button(coords_for_first_btn[0], coords_for_first_btn[1], start_img, 0.35)
-        resume_button = button.Button(coords_for_second_btn[0], coords_for_second_btn[1], resume_img, 0.35)
-        info_button = button.Button(width // 2 + 200, 40, info_img, 0.3)
-        home_button = button.Button(width // 2 + 200, 120, home_img, 0.3)
-        exit_button = button.Button(coords_for_third_btn[0], coords_for_third_btn[1], exit_img, 0.35)
-        if start_button.draw(screen):
-            # gameover = False
-            global gameover
-            gameover = False
-            global counter
-            map_name = f"levels/level_{level}.txt"
-            global player
-            global level_x
-            global level_y
-            # all_sprites.kill()
-            for player in player_group:
-                player.kill()
-                player_group.remove(player)
-                del player
-            for point in point_group:
-                point.kill()
-                point.remove()
-                del point
-                points.clear()
-            for enemy in enemy_group:
-                enemy.remove()
-                enemy.kill()
-                enemy_group.remove(enemy)
-                enemies.clear()
-                del enemy
+def get_from_database():
+    con = sqlite3.connect("results_db.sqlite")
+    cur = con.cursor()
+    data = cur.execute(f'SELECT score FROM results').fetchall()
+    max_value = max(map(lambda x: int(*x), data))
+    con.close()
+    return max_value
 
-            player, level_x, level_y = generate_level(load_level(map_name))
-            counter = 0
-            screen.fill((255, 228, 181))
 
-            return
-        if exit_button.draw(screen):
-            terminate()
-        if info_button.draw(screen):
-            print('здесь будет окно с правилами')
-        if resume_button.draw(screen):
-            print('здесь будет окно с результатами')
-        if home_button.draw(screen):
-            start_screen()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-        pygame.display.flip()
-        pygame.time.delay(FPS)
+font1 = pygame.font.Font(None, 50)
+font2 = pygame.font.SysFont("centuryschoolbookполужирный", 100)
+
+
+def draw_str(line, font=font1):
+    return font.render(str(line), True, (219, 215, 210))
+
+
+pacman_copy = load_image("pacman0_copy.png")
+player_img = [load_image('pacman0.png'), load_image('pacman1.png')]
+red_ghost_img = [load_image('red1.png'), load_image('red2.png'), load_image('red3.png'), load_image('red4.png')]
+pink_ghost_img = [load_image('pink1.png'), load_image('pink2.png'), load_image('pink3.png'), load_image('pink4.png')]
+blue_ghost_img = [load_image('blue1.png'), load_image('blue2.png'), load_image('blue3.png'), load_image('blue4.png')]
+yellow_ghost_img = [load_image('yellow1.png'), load_image('yellow2.png'), load_image('yellow3.png'),
+                    load_image('yellow4.png')]
+ghost_food = load_image('ghost_food.png')
+logo = load_image('logo_4.png')
+level_1_img = load_image('level_1.png')
+level_2_img = load_image('level_2.png')
+new_game_img = load_image('new_game.png')
+
+
+def ghost_anim(x, y, group):
+    global ghost_animation_counter
+    if ghost_animation_counter == 99:
+        ghost_animation_counter = 0
+    screen.blit(group[ghost_animation_counter // 30], (x, y))
+    ghost_animation_counter += 1
 
 
 def animation(x, y):
@@ -190,9 +147,6 @@ def animation(x, y):
         animation_counter = 0
     screen.blit(player_img[animation_counter // 10], (x, y))
     animation_counter += 1
-
-
-pacman_copy = load_image("pacman0_copy.png")
 
 
 def flip_animation(direction):
@@ -206,12 +160,59 @@ def flip_animation(direction):
         player_img[0] = pygame.transform.rotate(pacman_copy, 90)
 
 
-player_image = load_image('pacman.png')  # добавить анимацию игрока
-enemy_e_image = load_image('ghost_1.png')
-enemy_n_image = load_image('ghost_2.png')
-enemy_m_image = load_image('ghost_3.png')
-enemy_y_image = load_image('ghost_4.png')
-player_img = [load_image('pacman0.png'), load_image('pacman1.png')]
+def spin_anim():
+    pygame.mixer.music.stop()
+    death_sound.play()
+    for i in range(100):
+        idle_screen()
+        for enemy in enemies:
+            ghost_anim(enemy.rect.x, enemy.rect.y, enemy.group)
+        if i % 10 == 0:
+            player_img[0] = pygame.transform.rotate(player_img[0], 90)
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def idle_screen():
+    screen.fill((0, 0, 0))
+    all_sprites.update()
+
+    screen.blit(player_img[0], (player.rect.x, player.rect.y))
+    screen.blit(draw_str("Level: "), (10, 10))
+    screen.blit(draw_str(level_n), (125, 10))
+    screen.blit(draw_str("Score: "), (10, 60))
+    screen.blit(draw_str(score), (125, 62))
+    screen.blit(draw_str("High score: "), (10, 110))
+    screen.blit(draw_str(high_score), (10, 160))
+    screen.blit(draw_str("Lives left: "), (10, 210))
+
+    for i in range(lives):
+        screen.blit(pacman_copy, (10 + i * 50, 260))
+
+
+class Button:
+    def __init__(self, x, y, name):
+        self.image = name
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.clicked = False
+
+    def draw(self):
+        action = False
+        pos = pygame.mouse.get_pos()
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and not self.clicked:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
 
 
 class Platform(pygame.sprite.Sprite):
@@ -223,41 +224,51 @@ class Platform(pygame.sprite.Sprite):
         self.rect.y = coords[1] * 25
 
     def update(self):
-        pygame.draw.rect(screen, pygame.Color("black"), (self.rect.x, self.rect.y, 25, 25))
+        pygame.draw.rect(screen, (244, 137, 113), (self.rect.x, self.rect.y, 25, 25))
 
 
 class Point(pygame.sprite.Sprite):
 
     def __init__(self, coords):
         super().__init__(all_sprites, point_group)
-        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 16, 16)
+        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 10, 10)
         self.rect.x = coords[0] * 25
         self.rect.y = coords[1] * 25
 
     def update(self):
-        pygame.draw.circle(screen, pygame.Color("black"), (self.rect.x + 8, self.rect.y + 8), 8)
+        pygame.draw.circle(screen, (219, 215, 210), (self.rect.x + 5, self.rect.y + 5), 5)
 
 
 class CPoint(pygame.sprite.Sprite):
 
     def __init__(self, coords, forbidden_d):
-        super().__init__(all_sprites, c_point_group)
-        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 5, 5)
+        super().__init__(all_sprites)
+        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 25, 25)
         self.rect.x = coords[0] * 25
         self.rect.y = coords[1] * 25
         self.f_direction = forbidden_d
 
     def update(self):
-        pygame.draw.rect(screen, pygame.Color("red"), (self.rect.x, self.rect.y, 5, 5))
+        # pygame.draw.rect(screen, pygame.Color("red"), (self.rect.x, self.rect.y, 5, 5))
+        pass
+
+
+class BigPoint(pygame.sprite.Sprite):
+
+    def __init__(self, coords):
+        super().__init__(all_sprites, big_point_group)
+        self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 25, 25)
+        self.rect.x = coords[0] * 25
+        self.rect.y = coords[1] * 25
+
+    def update(self):
+        pygame.draw.circle(screen, (219, 215, 210), (self.rect.x + 12, self.rect.y + 12), 12)
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group)
-        # self.image = player_image
-        # self.rect = self.image.get_rect().move(
-        #     25 * pos_x, 25 * pos_y)
-        self.rect = pygame.Rect(25 * pos_x, 25 * pos_y, 60, 60)
+        self.rect = pygame.Rect(25 * pos_x, 25 * pos_y, 50, 50)
 
     def move(self, direction, distance):
 
@@ -271,17 +282,22 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.rect.move(0, distance)
 
     def update(self):
-        screen.blit(player_img[animation_counter // 10], (self.rect.x, self.rect.y))
-        # animation(self.rect.x, self.rect.y)
+        screen.blit(player_img[0], (self.rect.x, self.rect.y))
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, name):
-        super().__init__(enemy_group, all_sprites)
-        self.image = name
-        self.rect = self.image.get_rect().move(
-            25 * pos_x, 25 * pos_y)
-        self.route = 1
+    def __init__(self, pos_x, pos_y, group):
+        super().__init__()
+        self.w = 50
+        self.h = 50
+        self.rect = pygame.Rect(pos_x * 25, pos_y * 25, self.w, self.h)
+        self.group = group
+        routes = [1, -1, 2, -2]
+        self.route = routes[random.randint(0, 3)]
+        self.rect.x = pos_x * 25
+        self.rect.y = pos_y * 25
+        self.turn = -1
+        self.status = True
 
     def move(self, direction, distance):
         if direction == 1:
@@ -293,172 +309,351 @@ class Enemy(pygame.sprite.Sprite):
         elif direction == -2:
             self.rect = self.rect.move(0, distance)
 
+    def update(self):
+        screen.blit(ghost_food, (self.rect.x, self.rect.y))
 
+
+screen_rect = (0, 0, width, height)
+GRAVITY = 1
+
+
+class Particle(pygame.sprite.Sprite):
+    # сгенерируем частицы разного размера
+    fire = [load_image("star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, pos, dx, dy):
+        super().__init__(particle_group)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        # у каждой частицы своя скорость — это вектор
+        self.velocity = [dx, dy]
+        # и свои координаты
+        self.rect.x, self.rect.y = pos
+
+        # гравитация будет одинаковой (значение константы)
+        self.gravity = GRAVITY
+
+    def update(self):
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[1] += self.gravity
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+
+def create_particles(position):
+    # количество создаваемых частиц
+    particle_count = 30
+    # возможные скорости
+    numbers = range(-5, 6)
+    for _ in range(particle_count):
+        Particle(position, random.choice(numbers), random.choice(numbers))
+
+
+def null_f(n, flag):
+    global animation_counter
+    global ghost_animation_counter
+    global ghost_color_counter
+    global lives
+    global keys_pressed
+    global edible_ghosts
+    global high_score
+    global counter
+    global level_n
+    animation_counter = 0
+    ghost_animation_counter = 0
+    ghost_color_counter = 0
+    keys_pressed = 20
+    lives = 3
+    edible_ghosts = 0
+    high_score = get_from_database()
+    counter = 0
+    for i in all_sprites:
+        i.kill()
+    for i in player_group:
+        i.kill()
+    for i in point_group:
+        i.kill()
+    for i in big_point_group:
+        i.kill()
+    if n == 1:
+        level_n = 2
+    elif n == 2:
+        level_n = 1
+    platforms.clear()
+    c_points.clear()
+    enemies.clear()
+    player_img[0] = pacman_copy
+    if flag:
+        return game()
+    else:
+        return
+
+
+intro_song = pygame.mixer.Sound('data/sounds/intro.mp3')
+death_sound = pygame.mixer.Sound('data/sounds/death_sound_2.mp3')
+pygame.mixer.music.set_volume(1)
+FPS = 50
+clock = pygame.time.Clock()
+routes = [1, -1, 2, -2]
+ghost_coordinates = [(675, 275), (900, 275), (675, 400), (900, 400)]
+player_speed = 10
+enemy_speed = 5
+enemy_size = 50
+player_size = 50
+particle_group = pygame.sprite.Group()
 pygame.display.set_caption('pacman')
 
-player = None
+
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 point_group = pygame.sprite.Group()
-enemy_group = pygame.sprite.Group()
-c_point_group = pygame.sprite.Group()
+big_point_group = pygame.sprite.Group()
 platforms = []
-points = []
 c_points = []
 enemies = []
 animation_counter = 0
-FPS = 50
-player_speed = 10
-enemy_speed = 5
-clock = pygame.time.Clock()
-start_screen()
-level = 8
-once = 0
-map_name = f"levels/level_{level}.txt"
-player, level_x, level_y = generate_level(load_level(map_name))
-text_map = load_level(map_name)
+ghost_animation_counter = 0
+ghost_color_counter = 0
 counter = 0
-total_points = 10000
-routes = [1, -1, 2, -2]
-gameover = False
+score = 0
+level_n = 1
+player = None
 keys_pressed = 20
+lives = 3
+high_score = get_from_database()
+edible_ghosts = 0
 
-while True:
-    move_up = True
-    move_down = True
-    move_left = True
-    move_right = True
-    keys_pressed += 1
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            terminate()
+def game():
+    global counter
+    global edible_ghosts
+    global lives
+    global score
+    global keys_pressed
+    global player
+    global level_n
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_d]:
-        keys_pressed = 0
-        flip_animation("right")
-        char = pygame.Rect(player.rect.x + player_speed, player.rect.y, 60, 60)
-        for m in platforms:
-            if char.colliderect(m):
-                move_right = False
-                break
-        if move_right:
-            player.move("right", player_speed)
-    if keys[pygame.K_a]:
-        keys_pressed = 0
-        flip_animation("left")
-        char = pygame.Rect(player.rect.x - player_speed, player.rect.y, 60, 60)
-        for m in platforms:
-            if char.colliderect(m):
-                move_left = False
-                break
-        if move_left:
-            player.move("left", -player_speed)
-    if keys[pygame.K_w]:
-        keys_pressed = 0
-        flip_animation("up")
-        char = pygame.Rect(player.rect.x, player.rect.y - player_speed, 60, 60)
-        for m in platforms:
-            if char.colliderect(m):
-                move_up = False
-                break
-        if move_up:
-            player.move("up", -player_speed)
-    if keys[pygame.K_s]:
-        keys_pressed = 0
-        flip_animation("down")
-        char = pygame.Rect(player.rect.x, player.rect.y + player_speed, 60, 60)
-        for m in platforms:
-            if char.colliderect(m):
-                move_down = False
-                break
-        if move_down:
-            player.move("down", player_speed)
-
-    if pygame.sprite.spritecollide(player, point_group, True):
-        counter += 1
-    if counter == total_points:
-        gameover = True
-
+    map_name = f"levels/level_{level_n}.txt"
+    player, level_x, level_y, total_points = generate_level(load_level(map_name), level_n)
+    idle_screen()
     for enemy in enemies:
-        if player.rect.colliderect(enemy):
-            gameover = True
-        if enemy.route == 1:
-            mob = pygame.Rect(enemy.rect.x + enemy_speed, enemy.rect.y, 70, 70)
-            for m in platforms:
-                if mob.colliderect(m):
-                    possible_r = routes[random.randint(0, 3)]
-                    while possible_r == -1 or possible_r == 1:
-                        possible_r = routes[random.randint(0, 3)]
-                    enemy.route = possible_r
-                    break
-            else:
-                enemy.move(1, enemy_speed)
-        if enemy.route == -1:
-            mob = pygame.Rect(enemy.rect.x - enemy_speed, enemy.rect.y, 70, 70)
-            for m in platforms:
-                if mob.colliderect(m):
-                    possible_r = routes[random.randint(0, 3)]
-                    while possible_r == 1 or possible_r == -1:
-                        possible_r = routes[random.randint(0, 3)]
-                    enemy.route = possible_r
-                    break
-            else:
-                enemy.move(-1, -enemy_speed)
-        if enemy.route == 2:
-            mob = pygame.Rect(enemy.rect.x, enemy.rect.y + enemy_speed, 70, 70)
-            for m in platforms:
-                if mob.colliderect(m):
-                    possible_r = routes[random.randint(0, 3)]
-                    while possible_r == -2 or possible_r == 2:
-                        possible_r = routes[random.randint(0, 3)]
-                    enemy.route = possible_r
-                    break
-            else:
-                enemy.move(2, enemy_speed)
-        if enemy.route == -2:
-            mob = pygame.Rect(enemy.rect.x, enemy.rect.y - enemy_speed, 70, 70)
-            for m in platforms:
-                if mob.colliderect(m):
-                    possible_r = routes[random.randint(0, 3)]
-                    while possible_r == 2 or possible_r == -2:
-                        possible_r = routes[random.randint(0, 3)]
-                    enemy.route = possible_r
-                    break
-            else:
-                enemy.move(-2, -enemy_speed)
-        # if pygame.sprite.spritecollide(enemy, c_point_group, False):
-        #     for m in c_points:
-        #         if enemy.rect.colliderect(m):
-        #             possible_r = routes[random.randint(0, 3)]
-        #             while possible_r == m.f_direction:
-        #                 possible_r = routes[random.randint(0, 3)]
-        #             enemy.route = possible_r
-        #             enemy.move(enemy.route, 5)
-        for point in c_points:
-            if point.rect.x == enemy.rect.x + 35:
-                if point.rect.y == enemy.rect.y + 35:
-                    pr = routes[random.randint(0, 3)]
-                    while pr == point.f_direction:
-                        pr = routes[random.randint(0, 3)]
-                    enemy.route = pr
-                    enemy.move(enemy.route, 10)
-                    break
-    if gameover:
-        if once == 0:
-            add_to_database(level, counter)
-            once += 1
-        end_screen()
-        terminate()
-    screen.fill((255, 228, 181))
-    all_sprites.update()
-    if keys_pressed < 20:
-        animation(player.rect.x, player.rect.y)
-
-    if keys_pressed >= 20:
-        player_group.update()
-
-    enemy_group.draw(screen)
+        ghost_anim(enemy.rect.x, enemy.rect.y, enemy.group)
     pygame.display.flip()
     clock.tick(FPS)
+    intro_song.play()
+    time.sleep(5)
+    while True:
+        move_up = True
+        move_down = True
+        move_left = True
+        move_right = True
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                add_to_database(level_n, counter)
+                terminate()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+            keys_pressed = 0
+            flip_animation("right")
+            char = pygame.Rect(player.rect.x + player_speed, player.rect.y, player_size, player_size)
+            for p in platforms:
+                if char.colliderect(p):
+                    move_right = False
+                    break
+            if move_right:
+                player.move("right", player_speed)
+        if keys[pygame.K_a]:
+            keys_pressed = 0
+            flip_animation("left")
+            char = pygame.Rect(player.rect.x - player_speed, player.rect.y, player_size, player_size)
+            for p in platforms:
+                if char.colliderect(p):
+                    move_left = False
+                    break
+            if move_left:
+                player.move("left", -player_speed)
+        if keys[pygame.K_w]:
+            keys_pressed = 0
+            flip_animation("up")
+            char = pygame.Rect(player.rect.x, player.rect.y - player_speed, player_size, player_size)
+            for p in platforms:
+                if char.colliderect(p):
+                    move_up = False
+                    break
+            if move_up:
+                player.move("up", -player_speed)
+        if keys[pygame.K_s]:
+            keys_pressed = 0
+            flip_animation("down")
+            char = pygame.Rect(player.rect.x, player.rect.y + player_speed, player_size, player_size)
+            for p in platforms:
+                if char.colliderect(p):
+                    move_down = False
+                    break
+            if move_down:
+                player.move("down", player_speed)
+
+        if pygame.sprite.spritecollide(player, point_group, True):
+            counter += 1
+            score += 1
+        if counter == total_points:
+            return null_f(level_n, True)
+        if pygame.sprite.spritecollide(player, big_point_group, True):
+            edible_ghosts = 300
+            for en in enemies:
+                en.status = False
+
+        for enemy in enemies:
+            if edible_ghosts <= 0:
+                for en in enemies:
+                    en.status = True
+            if player.rect.colliderect(enemy):
+                if enemy.status:
+                    lives -= 1
+                    keys_pressed = 20
+                    spin_anim()
+                    player_img[0] = pacman_copy
+                    player.rect.x = 250
+                    player.rect.y = 50
+                    for i, en in enumerate(enemies):
+                        en.rect.x, en.rect.y = ghost_coordinates[i]
+                        en.status = True
+
+                    if lives <= 0:
+                        add_to_database(level_n, score)
+                        return end_screen()
+                elif not enemy.status:
+                    enemy.status = True
+                    enemy.rect.x = 675
+                    enemy.rect.y = 275
+                    score += 10
+            if enemy.route == 1:
+                mob = pygame.Rect(enemy.rect.x + enemy_speed, enemy.rect.y, enemy_size, enemy_size)
+                for p in platforms:
+                    if mob.colliderect(p):
+                        possible_r = routes[random.randint(0, 3)]
+                        while possible_r == -1 or possible_r == 1:
+                            possible_r = routes[random.randint(0, 3)]
+                        enemy.route = possible_r
+                        break
+                else:
+                    enemy.move(1, enemy_speed)
+            if enemy.route == -1:
+                mob = pygame.Rect(enemy.rect.x - enemy_speed, enemy.rect.y, enemy_size, enemy_size)
+                for p in platforms:
+                    if mob.colliderect(p):
+                        possible_r = routes[random.randint(0, 3)]
+                        while possible_r == 1 or possible_r == -1:
+                            possible_r = routes[random.randint(0, 3)]
+                        enemy.route = possible_r
+                        break
+                else:
+                    enemy.move(-1, -enemy_speed)
+            if enemy.route == 2:
+                mob = pygame.Rect(enemy.rect.x, enemy.rect.y + enemy_speed, enemy_size, enemy_size)
+                for p in platforms:
+                    if mob.colliderect(p):
+                        possible_r = routes[random.randint(0, 3)]
+                        while possible_r == -2 or possible_r == 2:
+                            possible_r = routes[random.randint(0, 3)]
+                        enemy.route = possible_r
+                        break
+                else:
+                    enemy.move(2, enemy_speed)
+            if enemy.route == -2:
+                mob = pygame.Rect(enemy.rect.x, enemy.rect.y - enemy_speed, enemy_size, enemy_size)
+                for p in platforms:
+                    if mob.colliderect(p):
+                        possible_r = routes[random.randint(0, 3)]
+                        while possible_r == 2 or possible_r == -2:
+                            possible_r = routes[random.randint(0, 3)]
+                        enemy.route = possible_r
+                        break
+                else:
+                    enemy.move(-2, -enemy_speed)
+            if enemy.turn <= 0:
+                for c in c_points:
+                    if enemy.rect.x == c.rect.x and enemy.rect.y == c.rect.y or \
+                            enemy.rect.x + enemy_size == c.rect.x + 25 and enemy.rect.y == c.rect.y:
+                        possible_r = routes[random.randint(0, 3)]
+                        while possible_r == c.f_direction or possible_r == -enemy.route:
+                            possible_r = routes[random.randint(0, 3)]
+                        enemy.route = possible_r
+                        enemy.turn = 50
+            enemy.turn -= 5
+
+        idle_screen()
+
+        for i in range(lives):
+            screen.blit(pacman_copy, (10 + i * 50, 260))
+
+        for enemy in enemies:
+            if enemy.status:
+                ghost_anim(enemy.rect.x, enemy.rect.y, enemy.group)
+            elif not enemy.status:
+                enemy.update()
+
+        if keys_pressed < 20:
+            animation(player.rect.x, player.rect.y)
+
+        if keys_pressed >= 20:
+            player_group.update()
+        keys_pressed += 1
+        edible_ghosts -= 1
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def start_screen():
+    global level_n
+    while True:
+        screen.fill((0, 0, 0))
+        screen.blit(logo, (150, 50))
+        level_1_btn = Button(185, 400, level_1_img)
+        level_2_btn = Button(900, 400, level_2_img)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        if level_1_btn.draw():
+            level_n = 1
+            return game()
+        elif level_2_btn.draw():
+            level_n = 2
+            return game()
+        pygame.display.flip()
+        pygame.time.delay(FPS)
+
+
+def end_screen():
+    null_f(0, False)
+    global score
+    score = 0
+    while True:
+        screen.fill((0, 0, 0))
+        new_game_btn = Button(500, 400, new_game_img)
+        screen.blit(draw_str("Game Over", font=font2), (350, 100))
+        if new_game_btn.draw():
+            start_screen()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                create_particles(pygame.mouse.get_pos())
+        particle_group.draw(screen)
+        particle_group.update()
+        pygame.display.flip()
+        pygame.time.delay(FPS)
+
+
+start_screen()
