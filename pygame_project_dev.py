@@ -11,6 +11,8 @@ size = width, height = 1400, 700
 WIDTH, HEIGHT = width, height
 screen = pygame.display.set_mode(size)
 map_width, map_height = 0, 0
+programIcon = pygame.image.load('data/icon_4.png')
+pygame.display.set_icon(programIcon)
 
 
 def load_image(name, colorkey=None):
@@ -31,17 +33,20 @@ def load_image(name, colorkey=None):
 
 def generate_level(level, level_n):
     global map_width, map_height
-    # point_total_num = 0
+    global screen_color
     new_player, x, y = None, None, None
-    total_p = 0
+    color = (0, 0, 0)
     if level_n == 1:
-        total_p = 294
+        color = (244, 137, 113)
+        screen_color = (0, 0, 0)
+        # (55, 31, 28)
     elif level_n == 2:
-        total_p = 291
+        color = (170, 240, 209)
+        screen_color = (0, 0, 0)
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == 'x':
-                platforms.append(Platform((x, y)))
+                platforms.append(Platform((x, y), color))
             elif level[y][x] == '@':
                 new_player = Player(x, y)
             elif level[y][x] == 'p':
@@ -71,14 +76,10 @@ def generate_level(level, level_n):
                 enemies.append(Enemy(x, y, yellow_ghost_img))
             elif level[y][x] == 'b':
                 BigPoint((x, y))
-            # if level[y][x] == 'u' or level[y][x] == 'l' or level[y][x] == 'r' or level[y][x] == 'd'\
-            #     or level[y][x] == 'p' or level[y][x] == 'c':
-            #     point_total_num += 1
 
     map_width = 50 * len(level[0])
     map_height = 50 * len(level)
-    # print(point_total_num)
-    return new_player, x, y, total_p
+    return new_player, x, y
 
 
 def terminate():
@@ -112,7 +113,7 @@ def get_from_database():
 
 
 font1 = pygame.font.Font(None, 50)
-font2 = pygame.font.SysFont("centuryschoolbookполужирный", 100)
+font2 = pygame.font.SysFont("centuryschoolbookполужирный", 200)
 
 
 def draw_str(line, font=font1):
@@ -131,6 +132,7 @@ logo = load_image('logo_4.png')
 level_1_img = load_image('level_1.png')
 level_2_img = load_image('level_2.png')
 new_game_img = load_image('new_game.png')
+test_level_img = load_image('test_l.png')
 
 
 def ghost_anim(x, y, group):
@@ -175,7 +177,7 @@ def spin_anim():
 
 
 def idle_screen():
-    screen.fill((0, 0, 0))
+    screen.fill(screen_color)
     all_sprites.update()
 
     screen.blit(player_img[0], (player.rect.x, player.rect.y))
@@ -217,14 +219,15 @@ class Button:
 
 class Platform(pygame.sprite.Sprite):
 
-    def __init__(self, coords):
+    def __init__(self, coords, color):
         super().__init__(all_sprites)
         self.rect = pygame.Rect(coords[0] * 25, coords[1] * 25, 25, 25)
         self.rect.x = coords[0] * 25
         self.rect.y = coords[1] * 25
+        self.color = color
 
     def update(self):
-        pygame.draw.rect(screen, (244, 137, 113), (self.rect.x, self.rect.y, 25, 25))
+        pygame.draw.rect(screen, self.color, (self.rect.x, self.rect.y, 25, 25))
 
 
 class Point(pygame.sprite.Sprite):
@@ -249,7 +252,7 @@ class CPoint(pygame.sprite.Sprite):
         self.f_direction = forbidden_d
 
     def update(self):
-        # pygame.draw.rect(screen, pygame.Color("red"), (self.rect.x, self.rect.y, 5, 5))
+        # pygame.draw.rect(screen, pygame.Color("red"), (self.rect.x, self.rect.y, 25, 25))
         pass
 
 
@@ -318,7 +321,6 @@ GRAVITY = 1
 
 
 class Particle(pygame.sprite.Sprite):
-    # сгенерируем частицы разного размера
     fire = [load_image("star.png")]
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))
@@ -327,31 +329,20 @@ class Particle(pygame.sprite.Sprite):
         super().__init__(particle_group)
         self.image = random.choice(self.fire)
         self.rect = self.image.get_rect()
-
-        # у каждой частицы своя скорость — это вектор
         self.velocity = [dx, dy]
-        # и свои координаты
         self.rect.x, self.rect.y = pos
-
-        # гравитация будет одинаковой (значение константы)
         self.gravity = GRAVITY
 
     def update(self):
-        # применяем гравитационный эффект:
-        # движение с ускорением под действием гравитации
         self.velocity[1] += self.gravity
-        # перемещаем частицу
         self.rect.x += self.velocity[0]
         self.rect.y += self.velocity[1]
-        # убиваем, если частица ушла за экран
         if not self.rect.colliderect(screen_rect):
             self.kill()
 
 
 def create_particles(position):
-    # количество создаваемых частиц
     particle_count = 30
-    # возможные скорости
     numbers = range(-5, 6)
     for _ in range(particle_count):
         Particle(position, random.choice(numbers), random.choice(numbers))
@@ -365,7 +356,6 @@ def null_f(n, flag):
     global keys_pressed
     global edible_ghosts
     global high_score
-    global counter
     global level_n
     animation_counter = 0
     ghost_animation_counter = 0
@@ -374,7 +364,6 @@ def null_f(n, flag):
     lives = 3
     edible_ghosts = 0
     high_score = get_from_database()
-    counter = 0
     for i in all_sprites:
         i.kill()
     for i in player_group:
@@ -392,9 +381,9 @@ def null_f(n, flag):
     enemies.clear()
     player_img[0] = pacman_copy
     if flag:
-        return game()
+        return game(True)
     else:
-        return
+        return end_screen()
 
 
 intro_song = pygame.mixer.Sound('data/sounds/intro.mp3')
@@ -422,9 +411,10 @@ enemies = []
 animation_counter = 0
 ghost_animation_counter = 0
 ghost_color_counter = 0
-counter = 0
+
 score = 0
 level_n = 1
+screen_color = (0, 0, 0)
 player = None
 keys_pressed = 20
 lives = 3
@@ -432,8 +422,7 @@ high_score = get_from_database()
 edible_ghosts = 0
 
 
-def game():
-    global counter
+def game(difficulty):
     global edible_ghosts
     global lives
     global score
@@ -442,7 +431,7 @@ def game():
     global level_n
 
     map_name = f"levels/level_{level_n}.txt"
-    player, level_x, level_y, total_points = generate_level(load_level(map_name), level_n)
+    player, level_x, level_y = generate_level(load_level(map_name), level_n)
     idle_screen()
     for enemy in enemies:
         ghost_anim(enemy.rect.x, enemy.rect.y, enemy.group)
@@ -458,7 +447,7 @@ def game():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                add_to_database(level_n, counter)
+                add_to_database(level_n, score)
                 terminate()
 
         keys = pygame.key.get_pressed()
@@ -504,10 +493,12 @@ def game():
                 player.move("down", player_speed)
 
         if pygame.sprite.spritecollide(player, point_group, True):
-            counter += 1
             score += 1
-        if counter == total_points:
-            return null_f(level_n, True)
+        if len(point_group) == 0:
+            if difficulty:
+                return null_f(level_n, True)
+            elif not difficulty:
+                return null_f(level_n, False)
         if pygame.sprite.spritecollide(player, big_point_group, True):
             edible_ghosts = 300
             for en in enemies:
@@ -518,7 +509,7 @@ def game():
                 for en in enemies:
                     en.status = True
             if player.rect.colliderect(enemy):
-                if enemy.status:
+                if enemy.status and difficulty:
                     lives -= 1
                     keys_pressed = 20
                     spin_anim()
@@ -531,12 +522,12 @@ def game():
 
                     if lives <= 0:
                         add_to_database(level_n, score)
-                        return end_screen()
+                        return null_f(level_n, False)
                 elif not enemy.status:
                     enemy.status = True
                     enemy.rect.x = 675
                     enemy.rect.y = 275
-                    score += 10
+                    score += 20
             if enemy.route == 1:
                 mob = pygame.Rect(enemy.rect.x + enemy_speed, enemy.rect.y, enemy_size, enemy_size)
                 for p in platforms:
@@ -620,36 +611,41 @@ def start_screen():
     while True:
         screen.fill((0, 0, 0))
         screen.blit(logo, (150, 50))
-        level_1_btn = Button(185, 400, level_1_img)
-        level_2_btn = Button(900, 400, level_2_img)
+        level_1_btn = Button(100, 400, level_1_img)
+        level_2_btn = Button(550, 400, level_2_img)
+        test_level_btn = Button(1000, 400, test_level_img)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
         if level_1_btn.draw():
             level_n = 1
-            return game()
-        elif level_2_btn.draw():
+            return game(True)
+        if level_2_btn.draw():
             level_n = 2
-            return game()
+            return game(True)
+        if test_level_btn.draw():
+            level_n = 2
+            return game(False)
         pygame.display.flip()
         pygame.time.delay(FPS)
 
 
 def end_screen():
-    null_f(0, False)
     global score
     score = 0
     while True:
         screen.fill((0, 0, 0))
-        new_game_btn = Button(500, 400, new_game_img)
-        screen.blit(draw_str("Game Over", font=font2), (350, 100))
-        if new_game_btn.draw():
-            start_screen()
+        new_game_btn = Button(550, 500, new_game_img)
+        text = draw_str("Game Over", font=font2)
+        text_rect = text.get_rect(center=(width / 2, 200))
+        screen.blit(text, text_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 create_particles(pygame.mouse.get_pos())
+        if new_game_btn.draw():
+            return start_screen()
         particle_group.draw(screen)
         particle_group.update()
         pygame.display.flip()
