@@ -113,7 +113,7 @@ def get_from_database():
 
 
 font1 = pygame.font.Font(None, 50)
-font2 = pygame.font.SysFont("centuryschoolbookполужирный", 200)
+font2 = pygame.font.SysFont("centuryschoolbookполужирный", 150)
 
 
 def draw_str(line, font=font1):
@@ -393,7 +393,7 @@ FPS = 50
 clock = pygame.time.Clock()
 routes = [1, -1, 2, -2]
 ghost_coordinates = [(675, 275), (900, 275), (675, 400), (900, 400)]
-player_speed = 10
+player_speed = 6
 enemy_speed = 5
 enemy_size = 50
 player_size = 50
@@ -447,7 +447,8 @@ def game(difficulty):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                add_to_database(level_n, score)
+                if difficulty:
+                    add_to_database(level_n, score)
                 terminate()
 
         keys = pygame.key.get_pressed()
@@ -500,7 +501,7 @@ def game(difficulty):
             elif not difficulty:
                 return null_f(level_n, False)
         if pygame.sprite.spritecollide(player, big_point_group, True):
-            edible_ghosts = 300
+            edible_ghosts = 200
             for en in enemies:
                 en.status = False
 
@@ -635,17 +636,20 @@ def end_screen():
     score = 0
     while True:
         screen.fill((0, 0, 0))
-        new_game_btn = Button(550, 500, new_game_img)
         text = draw_str("Game Over", font=font2)
-        text_rect = text.get_rect(center=(width / 2, 200))
+        text2 = draw_str("[press space bar to restart]")
+        text_rect = text.get_rect(center=(width / 2, 250))
+        text2_rect = text2.get_rect(center=(width / 2, 450))
         screen.blit(text, text_rect)
+        screen.blit(text2, text2_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 create_particles(pygame.mouse.get_pos())
-        if new_game_btn.draw():
-            return start_screen()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return start_screen()
         particle_group.draw(screen)
         particle_group.update()
         pygame.display.flip()
