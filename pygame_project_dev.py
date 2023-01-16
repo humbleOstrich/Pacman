@@ -131,7 +131,6 @@ ghost_food = load_image('ghost_food.png')
 logo = load_image('logo_4.png')
 level_1_img = load_image('level_1.png')
 level_2_img = load_image('level_2.png')
-new_game_img = load_image('new_game.png')
 test_level_img = load_image('test_l.png')
 
 
